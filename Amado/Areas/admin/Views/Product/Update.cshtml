@@ -3,8 +3,6 @@
     ViewData["Title"] = "Update";
     SelectList selectListItems = new SelectList(ViewBag.Brands, nameof(Brand.ID), nameof(Brand.Name));
     SelectList selectListItems2 = new SelectList(ViewBag.Categories, nameof(Category.ID), nameof(Category.Name));
-
-
 }
 
 <h1>Update</h1>
@@ -23,11 +21,12 @@
                 <input asp-for="Price" class="form-control" placeholder="Price...">
                 <span class="text-danger" asp-validation-for="Price"></span>
             </div>
-              <div class="form-group">
-                <label asp-for="Count" class="form-label">Count</label>
-                <input asp-for="Count" class="form-control" placeholder="Count...">
-                <span class="text-danger" asp-validation-for="Count"></span>
-            </div>
+            @foreach (ProductDescription description in Model.Description)
+            {
+                <label asp-for="@description.Text" class="form-label">Description</label>
+                <textarea class="form-control" asp-for="@description.Text" name="ProductDescription[]"></textarea>
+                <span asp-validation-for="@description.Text" class="text text-danger"></span>
+            }
              <div class="form-group">
                 <label asp-for="MainFile" class="form-label">Main Image</label>
                 <input asp-for="MainFile" class="form-control" placeholder="Main Image...">
@@ -64,21 +63,6 @@
                 </select>
                 <span class="text-danger" asp-validation-for="CategoryID"></span>
                 </div>
-                  @* <div class="row justify-content-center">
-                         <div class="select-main row col-lg-12">
-                             <div class="form-group col-lg-4">
-                                <label asp-for="ColorIDs">Colors</label>
-                                <select name="ColorIDs[]" class="form-select" asp-items="new SelectList(ViewBag.Colors,nameof(Color.ID),nameof(Color.Name))" aria-label="Default select example">
-                                </select>
-                             </div>
-                             <div class="form-group col-lg-4">
-                                <label asp-for="Counts" class="form-label">Count</label>
-                                <input asp-for="Counts" class="form-control" name="Counts" placeholder="Count...">
-                                <span class="text-danger" asp-validation-for="Counts"></span>
-                             </div>
-                          </div>
-                          @*<a asp-area="admin" asp-controller="product" asp-action="ColorSizeItem" class="btn btn-primary addInput">Add</a>*@
-                   @*</div>*@
                 @if (Model.ProductColors != null)
                 {
                     @for (int i = 0; i < Model.ProductColors.Count(); i++)
