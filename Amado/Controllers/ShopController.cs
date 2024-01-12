@@ -1,7 +1,10 @@
 ﻿using Amado.DAL;
+using Amado.Models;
+using Amado.ViewModels;
 using Amado.ViewModels.Shops;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Drawing.Printing;
 
 namespace Amado.Controllers
 {
@@ -13,22 +16,28 @@ namespace Amado.Controllers
         {
             _context = context;
         }
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int page)
         {
-            ShopVM shopVM = new ShopVM
-            {
-                Brands = await _context.Brands.ToListAsync(),
-                Categories = await _context.Categories.ToListAsync(),
-                Products = await _context.Products.ToListAsync()
-            };
+            IQueryable<Product> products = _context.Products.Include(x => x.Category).Include(x => x.Brand).OrderBy(x => x.ID);
 
-            return View(shopVM);
+            var pagedList = PageNationList<Product>.Create(products, page, 5);
+
+            ViewBag.Brands = _context.Brands.ToList();
+            ViewBag.Categories = _context.Categories.ToList();
+            ViewBag.Colors = _context.Colors.ToList();
+
+            return View(pagedList);
         }
 
+
         [HttpPost]
-        public async Task<IActionResult> FilterProducts(int? selectedBrand, int? selectedCategory)
+        public async Task<IActionResult> FilterProducts(int? selectedBrand, int? selectedCategory, int? selectedColor, int? minPrice, int? maxPrice,int? pageSize, int? page)
         {
             var filteredProducts = _context.Products.AsQueryable();
+
+            int currentPage = page ?? 1;
+
+            var filteredColors = await _context.ProductColors.ToListAsync();
 
             if (selectedBrand.HasValue)
             {
@@ -40,13 +49,36 @@ namespace Amado.Controllers
                 filteredProducts = filteredProducts.Where(p => p.CategoryID == selectedCategory);
             }
 
+            if (pageSize.HasValue)
+            {
+                int pageSizeMultiplier = pageSize.Value + 1;
+                int itemsToShow = pageSizeMultiplier * 3;
+
+                filteredProducts = filteredProducts.Take(itemsToShow);
+            }
+
+
+            if (selectedColor.HasValue)
+            {
+                var productIdsWithSelectedColor = _context.ProductColors
+                    .Where(pc => pc.ColorID == selectedColor)
+                    .Select(pc => pc.ProductID)
+                    .ToList();
+
+                filteredProducts = filteredProducts.Where(p => productIdsWithSelectedColor.Contains(p.ID));
+            }
+
+            if (minPrice.HasValue && maxPrice.HasValue)
+            {
+                filteredProducts = filteredProducts.Where(p => p.Price >= minPrice && p.Price <= maxPrice);
+            }
+
             var result = await filteredProducts.ToListAsync();
 
-            return PartialView("_FilteredProductPartial", result);
+            var resultQueryable = result.AsQueryable();
+
+            return PartialView("_FilteredProductPartial", PageNationList<Product>.Create(resultQueryable, currentPage, 5));
         }
 
-
     }
-
-
 }
